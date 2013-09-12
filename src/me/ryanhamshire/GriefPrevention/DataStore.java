@@ -47,6 +47,9 @@ public abstract class DataStore
 	//in-memory cache for claim data
 	ClaimArray claims = new ClaimArray();
 	
+	//Claims unloaded(or not yet loaded) due to the world not being loaded
+	protected HashMap<String, List<Long>> unloadedClaims = new HashMap<String, List<Long>>(); 
+	
 	//in-memory cache for messages
 	private String [] messages;
 	
@@ -84,6 +87,13 @@ public abstract class DataStore
 		//collect garbage, since lots of stuff was loaded into memory and then tossed out
 		
 	}
+	
+	/*
+	 * Load a claim from file or database by ID
+	 * @param id
+	 * @return
+	 */
+	public abstract boolean loadClaim(long id);
 	
 	/**
 	 * Removes cached player data from memory
@@ -225,6 +235,62 @@ public abstract class DataStore
 		this.saveClaim(newClaim);
 	}
 	
+	//Add a claim as unloaded for world
+	public void addUnloadedClaim(String world, long claimID)
+	{
+		//Check if there exists a list for world
+		List<Long> worldClaims = unloadedClaims.get(world);
+		if(worldClaims == null)
+		{
+			//Create a empty list
+			worldClaims = new ArrayList<Long>();
+			unloadedClaims.put(world, worldClaims);
+		}
+		
+		worldClaims.add(claimID);
+	}
+	
+	//Unload all loaded claims for a world
+	public void unloadClaims(World world)
+	{
+		//Iterate the list of claims to find every one for this world
+		//TODO: Make a per world list?
+		List<Claim> worldClaims = claims.getClaims(world);
+		for(Claim claim : worldClaims)
+		{
+			claims.removeID(claim.id);
+			addUnloadedClaim(world.getName(), claim.id);
+		}
+		System.out.println("Unloaded " + worldClaims.size() + " claims");
+	}
+	
+	//Return a list of unloaded claim ID's(Returns null if world has no unloaded claims)
+	public List<Long> getUnloadedClaims(String world)
+	{
+		return unloadedClaims.get(world);
+	}
+	
+	//Load all unloaded claims for world
+	public boolean loadUnloadedClaims(String world)
+	{
+		//Get unloaded claims for world
+		List<Long> claims = getUnloadedClaims(world);
+		if(claims == null)
+			return true; //No claims to load is the same as success
+		
+		//Load the claims
+		for(long claimID : claims)
+		{
+			if(!this.loadClaim(claimID))
+				System.out.println("Failed to load unloaded claim " + claimID + ", ignoring."); //Most likely claim no longer exists(Physically removed from storage)
+		}
+		
+		System.out.println("Loaded " + claims.size() + " claims for world " + world);
+		claims.clear(); //Clear list
+		
+		return true;
+	}
+	
 	//turns a location into a string, useful in data storage
 	private String locationStringDelimiter = ";";	
 	String locationToString(Location location)
@@ -261,7 +327,7 @@ public abstract class DataStore
 		World world = GriefPrevention.instance.getServer().getWorld(worldName);
 		if(world == null)
 		{
-			throw new WorldNotFoundException("World not found: \"" + worldName + "\"");
+			throw new WorldNotFoundException(worldName);
 		}
 		
 		//convert those numerical strings to integer values

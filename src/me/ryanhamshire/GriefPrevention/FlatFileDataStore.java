@@ -147,126 +147,139 @@ public class FlatFileDataStore extends DataStore
 					files[i] = newFile;
 				}
 				
-				BufferedReader inStream = null;
-				try
-				{		
-					Claim topLevelClaim = null;
-					
-					inStream = new BufferedReader(new FileReader(files[i].getAbsolutePath()));
-					String line = inStream.readLine();
-					
-					while(line != null)
-					{
-						//first line is lesser boundary corner location
-						Location lesserBoundaryCorner = this.locationFromString(line);
-						
-						//second line is greater boundary corner location
-						line = inStream.readLine();
-						Location greaterBoundaryCorner = this.locationFromString(line);
-						
-						//third line is owner name
-						line = inStream.readLine();						
-						String ownerName = line;
-						
-						//fourth line is list of builders
-						line = inStream.readLine();
-						String [] builderNames = line.split(";");
-						
-						//fifth line is list of players who can access containers
-						line = inStream.readLine();
-						String [] containerNames = line.split(";");
-						
-						//sixth line is list of players who can use buttons and switches
-						line = inStream.readLine();
-						String [] accessorNames = line.split(";");
-						
-						//seventh line is list of players who can grant permissions
-						line = inStream.readLine();
-						if(line == null) line = "";
-						String [] managerNames = line.split(";");
-						
-						//Eighth line either contains whether the claim can ever be deleted, or the divider for the subclaims
-						boolean neverdelete = false;
-						line = inStream.readLine();
-						if(line == null) line = "";
-						if(!line.contains("==========")) {
-							neverdelete = Boolean.parseBoolean(line);
-						}
-						
-						//Sub claims below this line
-						while(line != null && !line.contains("=========="))
-							line = inStream.readLine();
-						
-						//build a claim instance from those data
-						//if this is the first claim loaded from this file, it's the top level claim
-						if(topLevelClaim == null)
-						{
-							//instantiate
-							topLevelClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerName, builderNames, containerNames, accessorNames, managerNames, claimID, neverdelete);
-							
-							//search for another claim overlapping this one
-							Claim conflictClaim = this.getClaimAt(topLevelClaim.lesserBoundaryCorner, true, null);
-							
-							//if there is such a claim, delete this file and move on to the next
-							if(conflictClaim != null)
-							{
-								inStream.close();
-								files[i].delete();
-								line = null;
-								continue;
-							}
-							
-							//otherwise, add this claim to the claims collection
-							else
-							{
-								topLevelClaim.modifiedDate = new Date(files[i].lastModified());
-								int j = 0;
-								while(j < this.claims.size() && !this.claims.get(j).greaterThan(topLevelClaim)) j++;
-								if(j < this.claims.size())
-									this.claims.add(j, topLevelClaim);
-								else
-									this.claims.add(this.claims.size(), topLevelClaim);
-								topLevelClaim.inDataStore = true;								
-							}
-						}
-						
-						//otherwise there's already a top level claim, so this must be a subdivision of that top level claim
-						else
-						{
-							Claim subdivision = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, "--subdivision--", builderNames, containerNames, accessorNames, managerNames, null, neverdelete);
-							
-							subdivision.modifiedDate = new Date(files[i].lastModified());
-							subdivision.parent = topLevelClaim;
-							topLevelClaim.children.add(subdivision);
-							subdivision.inDataStore = true;
-						}
-						
-						//move up to the first line in the next subdivision
-						line = inStream.readLine();
-					}
-					
-					inStream.close();
-				}
-				//We don't need to log any additional error messages for this error.
-				catch(WorldNotFoundException e) {
-					//Nothing to do here.
-				}
 				
-				//if there's any problem with the file's content, log an error message and skip it
-				catch(Exception e)
-				{
-					 GriefPrevention.AddLogEntry("Unable to load data for claim \"" + files[i].getName() + "\": " + e.getMessage());
-				}
+				loadClaim(claimID);
 				
-				try
-				{
-					if(inStream != null) inStream.close();					
-				}
-				catch(IOException exception) {}
 			}
 		}
 		
 		super.initialize();
+	}
+	
+	public boolean loadClaim(long claimID)
+	{
+		Claim topLevelClaim = null;
+		BufferedReader inStream = null;
+		File file = new File(claimDataFolderPath + File.separator + String.valueOf(claimID));
+		
+		try {
+			inStream = new BufferedReader(new FileReader( file.getAbsolutePath() ));
+			String line = inStream.readLine();
+			
+			while(line != null)
+			{
+				//first line is lesser boundary corner location
+				Location lesserBoundaryCorner = this.locationFromString(line);
+				
+				//second line is greater boundary corner location
+				line = inStream.readLine();
+				Location greaterBoundaryCorner = this.locationFromString(line);
+				
+				//third line is owner name
+				line = inStream.readLine();						
+				String ownerName = line;
+				
+				//fourth line is list of builders
+				line = inStream.readLine();
+				String [] builderNames = line.split(";");
+				
+				//fifth line is list of players who can access containers
+				line = inStream.readLine();
+				String [] containerNames = line.split(";");
+				
+				//sixth line is list of players who can use buttons and switches
+				line = inStream.readLine();
+				String [] accessorNames = line.split(";");
+				
+				//seventh line is list of players who can grant permissions
+				line = inStream.readLine();
+				if(line == null) line = "";
+				String [] managerNames = line.split(";");
+				
+				//Eighth line either contains whether the claim can ever be deleted, or the divider for the subclaims
+				boolean neverdelete = false;
+				line = inStream.readLine();
+				if(line == null) line = "";
+				if(!line.contains("==========")) {
+					neverdelete = Boolean.parseBoolean(line);
+				}
+				
+				//Sub claims below this line
+				while(line != null && !line.contains("=========="))
+					line = inStream.readLine();
+				
+				//build a claim instance from those data
+				//if this is the first claim loaded from this file, it's the top level claim
+				if(topLevelClaim == null)
+				{
+					//instantiate
+					topLevelClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerName, builderNames, containerNames, accessorNames, managerNames, claimID, neverdelete);
+					
+					//search for another claim overlapping this one
+					Claim conflictClaim = this.getClaimAt(topLevelClaim.lesserBoundaryCorner, true, null);
+					
+					//if there is such a claim, delete this file and move on to the next
+					if(conflictClaim != null)
+					{
+						inStream.close();
+						file.delete();
+						line = null;
+						return false;
+					}
+					
+					//otherwise, add this claim to the claims collection
+					else
+					{
+						topLevelClaim.modifiedDate = new Date(file.lastModified());
+						int j = 0;
+						while(j < this.claims.size() && !this.claims.get(j).greaterThan(topLevelClaim)) j++;
+						if(j < this.claims.size())
+							this.claims.add(j, topLevelClaim);
+						else
+							this.claims.add(this.claims.size(), topLevelClaim);
+						topLevelClaim.inDataStore = true;								
+					}
+				}
+				
+				//otherwise there's already a top level claim, so this must be a subdivision of that top level claim
+				else
+				{
+					Claim subdivision = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, "--subdivision--", builderNames, containerNames, accessorNames, managerNames, null, neverdelete);
+					
+					subdivision.modifiedDate = new Date(file.lastModified());
+					subdivision.parent = topLevelClaim;
+					topLevelClaim.children.add(subdivision);
+					subdivision.inDataStore = true;
+				}
+				
+				//move up to the first line in the next subdivision
+				line = inStream.readLine();
+			}
+			
+			inStream.close();
+		}
+		//We don't need to log any additional error messages for this error.
+		catch(WorldNotFoundException e) {
+			//Mark it for loading when(if) the world is loaded
+			this.addUnloadedClaim(e.worldName, claimID);
+		}
+		
+		//if there's any problem with the file's content, log an error message and skip it
+		catch(Exception e)
+		{
+			 GriefPrevention.AddLogEntry("Unable to load data for claim \"" + file.getName() + "\": " + e.getMessage());
+			 return false;
+		}
+		
+		try
+		{
+			if(inStream != null) inStream.close();					
+		}
+		catch(IOException exception) {}
+		
+		System.out.println("Loaded claim " + claimID);
+		
+		return true;
 	}
 	
 	@Override

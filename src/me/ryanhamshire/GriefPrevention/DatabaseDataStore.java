@@ -150,91 +150,7 @@ public class DatabaseDataStore extends DataStore
 		{
 			try
 			{
-				//skip subdivisions
-				long parentId = results.getLong("parentid");
-				if(parentId != -1) continue;
-				
-				long claimID = results.getLong("id");
-					
-				String lesserCornerString = results.getString("lessercorner");
-				Location lesserBoundaryCorner = this.locationFromString(lesserCornerString);
-				
-				String greaterCornerString = results.getString("greatercorner");
-				Location greaterBoundaryCorner = this.locationFromString(greaterCornerString);
-				
-				String ownerName = results.getString("owner");
-	
-				String buildersString = results.getString("builders");
-				String [] builderNames = buildersString.split(";");
-				
-				String containersString = results.getString("containers");
-				String [] containerNames = containersString.split(";");
-				
-				String accessorsString = results.getString("accessors");
-				String [] accessorNames = accessorsString.split(";");
-				
-				String managersString = results.getString("managers");
-				String [] managerNames = managersString.split(";");
-				
-				boolean neverdelete = results.getBoolean("neverdelete");
-				
-				Claim topLevelClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerName, builderNames, containerNames, accessorNames, managerNames, claimID, neverdelete);
-				
-				//search for another claim overlapping this one
-				Claim conflictClaim = this.getClaimAt(topLevelClaim.lesserBoundaryCorner, true, null);
-								
-				//if there is such a claim, mark it for later removal
-				if(conflictClaim != null)
-				{
-					claimsToRemove.add(conflictClaim);
-					continue;
-				}
-				
-				//otherwise, add this claim to the claims collection
-				else
-				{
-					int j = 0;
-					while(j < this.claims.size() && !this.claims.get(j).greaterThan(topLevelClaim)) j++;
-					if(j < this.claims.size())
-						this.claims.add(j, topLevelClaim);
-					else
-						this.claims.add(this.claims.size(), topLevelClaim);
-					topLevelClaim.inDataStore = true;								
-				}
-				
-				//look for any subdivisions for this claim
-				Statement statement2 = this.databaseConnection.createStatement();
-				ResultSet childResults = statement2.executeQuery("SELECT * FROM griefprevention_claimdata WHERE parentid=" + topLevelClaim.id + ";");
-				
-				while(childResults.next())
-				{			
-					lesserCornerString = childResults.getString("lessercorner");
-					lesserBoundaryCorner = this.locationFromString(lesserCornerString);
-					
-					greaterCornerString = childResults.getString("greatercorner");
-					greaterBoundaryCorner = this.locationFromString(greaterCornerString);
-					
-					buildersString = childResults.getString("builders");
-					builderNames = buildersString.split(";");
-					
-					containersString = childResults.getString("containers");
-					containerNames = containersString.split(";");
-					
-					accessorsString = childResults.getString("accessors");
-					accessorNames = accessorsString.split(";");
-					
-					managersString = childResults.getString("managers");
-					managerNames = managersString.split(";");
-					
-					neverdelete = results.getBoolean("neverdelete");
-					
-					Claim childClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerName, builderNames, containerNames, accessorNames, managerNames, null, neverdelete);
-					
-					//add this claim to the list of children of the current top level claim
-					childClaim.parent = topLevelClaim;
-					topLevelClaim.children.add(childClaim);
-					childClaim.inDataStore = true;						
-				}
+				loadClaim(results, claimsToRemove);
 			}
 			catch(SQLException e)
 			{
@@ -245,6 +161,7 @@ public class DatabaseDataStore extends DataStore
 				//We don't need to worry about this exception.
 				//This is just here to catch it so that the plugin
 				//can load without erroring out.
+				this.addUnloadedClaim(e.worldName, results.getLong("id"));
 			}
 		}
 		
@@ -254,6 +171,123 @@ public class DatabaseDataStore extends DataStore
 		}
 		
 		super.initialize();
+	}
+	
+	public boolean loadClaim(long id)
+	{
+		ArrayList<Claim> claimsToRemove = new ArrayList<Claim>();
+		
+		try {
+			//Make sure we still have a connection to the database(If not, reconnect)
+			this.refreshDataConnection();
+			
+			//load claims data into memory	
+			Statement statement = databaseConnection.createStatement();
+			ResultSet results = statement.executeQuery("SELECT * FROM griefprevention_claimdata WHERE id=" + id + ";");
+			
+			if(!loadClaim(results, claimsToRemove))
+				return false;
+			
+		} 
+		catch (Exception e) {
+			//Failure, return that we failed to load the claim
+			System.out.println("Failed to load Claim " + id + " from database! (" + e.getMessage() + ")");
+			return false;
+		}
+		
+		
+		return true;
+	}
+	
+	boolean loadClaim(ResultSet results, ArrayList<Claim> claimsToRemove) throws SQLException, WorldNotFoundException, Exception
+	{
+		//skip subdivisions
+		long parentId = results.getLong("parentid");
+		if(parentId != -1) return false;
+		
+		long claimID = results.getLong("id");
+			
+		String lesserCornerString = results.getString("lessercorner");
+		Location lesserBoundaryCorner = this.locationFromString(lesserCornerString);
+		
+		String greaterCornerString = results.getString("greatercorner");
+		Location greaterBoundaryCorner = this.locationFromString(greaterCornerString);
+		
+		String ownerName = results.getString("owner");
+
+		String buildersString = results.getString("builders");
+		String [] builderNames = buildersString.split(";");
+		
+		String containersString = results.getString("containers");
+		String [] containerNames = containersString.split(";");
+		
+		String accessorsString = results.getString("accessors");
+		String [] accessorNames = accessorsString.split(";");
+		
+		String managersString = results.getString("managers");
+		String [] managerNames = managersString.split(";");
+		
+		boolean neverdelete = results.getBoolean("neverdelete");
+		
+		Claim topLevelClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerName, builderNames, containerNames, accessorNames, managerNames, claimID, neverdelete);
+		
+		//search for another claim overlapping this one
+		Claim conflictClaim = this.getClaimAt(topLevelClaim.lesserBoundaryCorner, true, null);
+						
+		//if there is such a claim, mark it for later removal
+		if(conflictClaim != null)
+		{
+			claimsToRemove.add(conflictClaim);
+			return true;
+		}
+		
+		//otherwise, add this claim to the claims collection
+		else
+		{
+			int j = 0;
+			while(j < this.claims.size() && !this.claims.get(j).greaterThan(topLevelClaim)) j++;
+			if(j < this.claims.size())
+				this.claims.add(j, topLevelClaim);
+			else
+				this.claims.add(this.claims.size(), topLevelClaim);
+			topLevelClaim.inDataStore = true;								
+		}
+		
+		//look for any subdivisions for this claim
+		Statement statement2 = this.databaseConnection.createStatement();
+		ResultSet childResults = statement2.executeQuery("SELECT * FROM griefprevention_claimdata WHERE parentid=" + topLevelClaim.id + ";");
+		
+		while(childResults.next())
+		{			
+			lesserCornerString = childResults.getString("lessercorner");
+			lesserBoundaryCorner = this.locationFromString(lesserCornerString);
+			
+			greaterCornerString = childResults.getString("greatercorner");
+			greaterBoundaryCorner = this.locationFromString(greaterCornerString);
+			
+			buildersString = childResults.getString("builders");
+			builderNames = buildersString.split(";");
+			
+			containersString = childResults.getString("containers");
+			containerNames = containersString.split(";");
+			
+			accessorsString = childResults.getString("accessors");
+			accessorNames = accessorsString.split(";");
+			
+			managersString = childResults.getString("managers");
+			managerNames = managersString.split(";");
+			
+			neverdelete = results.getBoolean("neverdelete");
+			
+			Claim childClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerName, builderNames, containerNames, accessorNames, managerNames, null, neverdelete);
+			
+			//add this claim to the list of children of the current top level claim
+			childClaim.parent = topLevelClaim;
+			topLevelClaim.children.add(childClaim);
+			childClaim.inDataStore = true;						
+		}
+		
+		return true;
 	}
 	
 	@Override

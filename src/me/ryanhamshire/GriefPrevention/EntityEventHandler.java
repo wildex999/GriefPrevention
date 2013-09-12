@@ -75,7 +75,7 @@ class EntityEventHandler implements Listener
 	
 	//don't allow endermen to change blocks
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-	public void onEntityChangeBLock(EntityChangeBlockEvent event)
+	public void onEntityChangeBlock(EntityChangeBlockEvent event)
 	{
 		if(!GriefPrevention.instance.config_endermenMoveBlocks && event.getEntityType() == EntityType.ENDERMAN)
 		{

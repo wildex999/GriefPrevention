@@ -52,6 +52,7 @@ import org.bukkit.command.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.PluginManager;
@@ -185,6 +186,7 @@ public class GriefPrevention extends JavaPlugin
 	//the plugin warns about being in the wilderness and all that guff about
 	//players being able to undo your work. 0 disables the display entirely.
 	public int config_claims_wildernessBlocksDelay;
+
 	
 	//reference to the economy plugin, if economy integration is enabled
 	public static Economy economy = null;					
@@ -848,20 +850,25 @@ public class GriefPrevention extends JavaPlugin
 		CleanupUnusedClaimsTask task2 = new CleanupUnusedClaimsTask();
 		this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task2, 20L * 60 * 2, 20L * 60 * 5);
 		}
+		
 		//register for events
 		PluginManager pluginManager = this.getServer().getPluginManager();
-		
+			
 		//player events
 		PlayerEventHandler playerEventHandler = new PlayerEventHandler(this.dataStore, this);
 		pluginManager.registerEvents(playerEventHandler, this);
-		
+			
 		//block events
 		BlockEventHandler blockEventHandler = new BlockEventHandler(this.dataStore);
 		pluginManager.registerEvents(blockEventHandler, this);
-				
+					
 		//entity events
 		EntityEventHandler entityEventHandler = new EntityEventHandler(this.dataStore);
 		pluginManager.registerEvents(entityEventHandler, this);
+		
+		//world events
+		WorldEventHandler worldEventHandler = new WorldEventHandler(this.dataStore);
+		pluginManager.registerEvents(worldEventHandler, this);
 		
 		//if economy is enabled
 		if(this.config_economy_claimBlocksPurchaseCost > 0 || this.config_economy_claimBlocksSellValue > 0)
@@ -1001,8 +1008,13 @@ public class GriefPrevention extends JavaPlugin
 		}
 		if(cmd.getName().equalsIgnoreCase("gpreload")){
 			if(player==null || player.hasPermission("griefprevention.reload")){
-			this.onDisable();
-			this.onEnable();
+				this.onDisable();
+				this.onEnable();
+				return true;
+			}
+			else
+			{
+				return false;
 			}
 		}
 		//abandontoplevelclaim
@@ -2515,20 +2527,33 @@ public class GriefPrevention extends JavaPlugin
 		return null;
 	}
 
+	@Override
 	public void onDisable()
 	{ 
-		//save data for any online players
-		Player [] players = this.getServer().getOnlinePlayers();
-		for(int i = 0; i < players.length; i++)
-		{
-			Player player = players[i];
-			String playerName = player.getName();
-			PlayerData playerData = this.dataStore.getPlayerData(playerName);
-			this.dataStore.savePlayerData(playerName, playerData);
-		}
 		//cancel ALL pending tasks.
 		Bukkit.getScheduler().cancelTasks(this);
-		this.dataStore.close();
+		
+		if(this.dataStore != null)
+		{
+			//save data for any online players
+			Player [] players = this.getServer().getOnlinePlayers();
+			for(int i = 0; i < players.length; i++)
+			{
+				Player player = players[i];
+				String playerName = player.getName();
+				PlayerData playerData = this.dataStore.getPlayerData(playerName);
+				this.dataStore.savePlayerData(playerName, playerData);
+			}
+	
+			this.dataStore.close();
+		}
+		else
+			GriefPrevention.AddLogEntry("ERROR: DataStore is not configured correctly, no data is being saved. Please fix your config!");
+		
+		dataStore = null;
+		
+		//Unregister existings events(Allows dataStore to be updated on re-registering)
+		HandlerList.unregisterAll(this);
 		
 		AddLogEntry("GriefPrevention disabled.");
 	}
@@ -2824,7 +2849,7 @@ public class GriefPrevention extends JavaPlugin
 	//sends a color-coded message to a player
 	static void sendMessage(Player player, ChatColor color, Messages messageID, long delayInTicks, String... args)
 	{
-		System.out.println("sending " + messageID + " to player:" + player.getName());
+		//System.out.println("sending " + messageID + " to player:" + player.getName());
 		String message = GriefPrevention.instance.dataStore.getMessage(messageID, args);
 		sendMessage(player, color, message, delayInTicks);
 	}

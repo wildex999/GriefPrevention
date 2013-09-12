@@ -1,6 +1,7 @@
 package me.ryanhamshire.GriefPrevention;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ClaimArray {
@@ -85,6 +86,18 @@ public class ClaimArray {
 			}
 		}
 		return chunks;
+	}
+	
+	public List<Claim> getClaims(org.bukkit.World world)
+	{
+		List<Claim> worldClaims = new ArrayList<Claim>();
+		for(Claim claim : claims)
+		{
+			if(claim.greaterBoundaryCorner.getWorld() == world) //Comparing worlds is fasterthan Strings, and at this point we expect to have a World reference
+				worldClaims.add(claim);
+		}
+		
+		return worldClaims;
 	}
 
 }
