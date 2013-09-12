@@ -1,0 +1,7 @@
+How to compile JAR
+
+Import the source into a new Eclipse project.
+Add Bukkit-1.5.2-R1.0.jar as a Library under Project Properties -> Java Build path
+Add vault.jar (Vault for Bukkit 1.5.2) as a Library.
+
+Export as JAR.
