@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 
+import me.ryanhamshire.GriefPrevention.baseprotect.BaseProtectHandler;
 import me.ryanhamshire.GriefPrevention.tasks.CleanupUnusedClaimsTask;
 import me.ryanhamshire.GriefPrevention.tasks.DeliverClaimBlocksTask;
 import me.ryanhamshire.GriefPrevention.tasks.EntityCleanupTask;
@@ -36,6 +37,7 @@ import me.ryanhamshire.GriefPrevention.tasks.SendPlayerMessageTask;
 import me.ryanhamshire.GriefPrevention.tasks.TreeCleanupTask;
 import me.ryanhamshire.GriefPrevention.visualization.Visualization;
 import net.milkbowl.vault.economy.Economy;
+import net.minecraft.client.Minecraft;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -58,6 +60,9 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import w999.baseprotect.BaseProtect;
+import w999.baseprotect.IClaimManager;
 
 public class GriefPrevention extends JavaPlugin
 {
@@ -186,6 +191,11 @@ public class GriefPrevention extends JavaPlugin
 	//the plugin warns about being in the wilderness and all that guff about
 	//players being able to undo your work. 0 disables the display entirely.
 	public int config_claims_wildernessBlocksDelay;
+
+	//Handler for everything BaseProtect
+	public BaseProtectHandler baseProtectHandler;
+	//BaseProtect, ignore events(Used to avoid doing multiple checks)
+	public static boolean ignoreEvents;
 
 	
 	//reference to the economy plugin, if economy integration is enabled
@@ -904,6 +914,19 @@ public class GriefPrevention extends JavaPlugin
 			{
 				GriefPrevention.AddLogEntry("ERROR: Vault was unable to find a supported economy plugin.  Either install a Vault-compatible economy plugin, or set both of the economy config variables to zero.");
 			}
+		}
+		
+		//Plug into BaseProtect
+		try 
+		{
+			baseProtectHandler = new BaseProtectHandler(this);
+			BaseProtect.setClaimManager(baseProtectHandler);
+			System.out.println("Hooked into BaseProtect");
+		} catch (Exception e)
+		{
+			//Failed to plug into baseprotect, usually means it's not present.
+			System.err.println("Exception while hooking into BaseProtect: ");
+			e.printStackTrace();
 		}
 	}
 	private void HandleClaimClean(Claim c,MaterialInfo source,MaterialInfo target,Player player){

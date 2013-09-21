@@ -173,8 +173,11 @@ public class BlockEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockBreak(BlockBreakEvent breakEvent)
 	{
+		if(GriefPrevention.ignoreEvents)
+			return;
+		
 		Player player = breakEvent.getPlayer();
-		Block block = breakEvent.getBlock();		
+		Block block = breakEvent.getBlock();	
 		
 		//make sure the player is allowed to break at the location
 		String noBuildReason = GriefPrevention.instance.allowBreak(player, block.getLocation());
@@ -251,6 +254,9 @@ public class BlockEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
 	public void onBlockPlace(BlockPlaceEvent placeEvent)
 	{
+		if(GriefPrevention.ignoreEvents)
+			return;
+		
 		Player player = placeEvent.getPlayer();
 		Block block = placeEvent.getBlock();
 		

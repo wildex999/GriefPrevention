@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="C:/Users/wildex999/Downloads/GITProjects/Vault.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/mcpc-plus"/>
+	<classpathentry kind="lib" path="C:/Users/wildex999/Downloads/GITProjects/bukkit-1.5.2-R1.0.jar" sourcepath="C:/Users/wildex999/Downloads/GITProjects/Bukkit/src/main/java">
+		<attributes>
+			<attribute name="javadoc_location" value="file:/C:/Users/wildex999/Downloads/GITProjects/Bukkit/doc/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/wildex999/Downloads/GITProjects/MCPC-Plus-Legacy/target/mcpc-plus-1.5.2-R1.1-forge738-B0.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
