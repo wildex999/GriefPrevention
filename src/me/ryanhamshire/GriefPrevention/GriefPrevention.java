@@ -2247,6 +2247,7 @@ public class GriefPrevention extends JavaPlugin
 		if(claim == null)
 		{
 			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.AbandonClaimMissing);
+			return true;
 		}
 
 		int claimarea = claim.getArea();
