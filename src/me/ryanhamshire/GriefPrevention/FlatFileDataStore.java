@@ -277,8 +277,6 @@ public class FlatFileDataStore extends DataStore
 		}
 		catch(IOException exception) {}
 		
-		System.out.println("Loaded claim " + claimID);
-		
 		return true;
 	}
 	
