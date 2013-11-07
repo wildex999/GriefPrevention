@@ -8,7 +8,7 @@ import org.bukkit.entity.Player;
 
 import w999.baseprotect.BaseProtect;
 import w999.baseprotect.IClaimManager;
-import w999.baseprotect.IWorldInteract;
+import w999.baseprotect.WorldInteract;
 
 public class BaseProtectHandler implements IClaimManager {
 	
@@ -21,7 +21,7 @@ public class BaseProtectHandler implements IClaimManager {
 	}
 
 	@Override
-	public boolean claimCanBuild(IWorldInteract interactor, Location loc) {
+	public boolean claimCanBuild(WorldInteract interactor, Location loc) {
 		w999.baseprotect.PlayerData owner = interactor.getItemOwner();
 		
 		//Get the claim at the location
@@ -46,13 +46,13 @@ public class BaseProtectHandler implements IClaimManager {
 	}
 
 	@Override
-	public boolean claimCanInteract(IWorldInteract interactor, Location loc) {
+	public boolean claimCanInteract(WorldInteract interactor, Location loc) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	public boolean claimCanContainer(IWorldInteract interactor, Location loc) {
+	public boolean claimCanContainer(WorldInteract interactor, Location loc) {
 		// TODO Auto-generated method stub
 		return false;
 	}
