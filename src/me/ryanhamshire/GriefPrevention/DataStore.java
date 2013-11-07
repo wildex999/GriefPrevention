@@ -56,6 +56,9 @@ public abstract class DataStore
 	//next claim ID
 	Long nextClaimID = (long)0;
 	
+	//create a temporary "fake" claim in memory for comparison purposes		
+	Claim tempClaim = new Claim();
+	
 	//path information, for where stuff stored on disk is well...  stored
 	protected final static String dataLayerFolderPath = "plugins" + File.separator + "GriefPreventionData";
 	final static String configFilePath = dataLayerFolderPath + File.separator + "config.yml";
@@ -468,8 +471,6 @@ public abstract class DataStore
 		
 		
 		//the claims list is ordered by greater boundary corner
-		//create a temporary "fake" claim in memory for comparison purposes		
-		Claim tempClaim = new Claim();
 		tempClaim.lesserBoundaryCorner = location;
 		
 		//Let's get all the claims in this block's chunk
