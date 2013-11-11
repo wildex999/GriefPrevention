@@ -538,9 +538,9 @@ class PlayerEventHandler implements Listener
 		
 		//FEATURE: auto-ban accounts who use an IP address which was very recently used by another banned account
 		if(GriefPrevention.instance.config_smartBan && !player.hasPlayedBefore())
-		{		
+		{	
 			//search temporarily banned IP addresses for this one
-			for(int i = 0; i < this.tempBannedIps.size(); i++)
+			/*for(int i = 0; i < this.tempBannedIps.size(); i++)
 			{
 				IpBanInfo info = this.tempBannedIps.get(i);
 				String address = info.address.toString();
@@ -597,7 +597,7 @@ class PlayerEventHandler implements Listener
 						break;
 					}
 				}
-			}
+			}*/
 		}
 	}
 	
