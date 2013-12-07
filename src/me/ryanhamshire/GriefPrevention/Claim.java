@@ -397,7 +397,7 @@ public class Claim
 	public String allowBuild(Player player)
 	{
 		//if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
-		if(player == null) return "";
+		if(player == null) return "No player";
 		
 		//when a player tries to build in a claim, if he's under siege, the siege may extend to include the new claim
 		GriefPrevention.instance.dataStore.tryExtendSiege(player, this);

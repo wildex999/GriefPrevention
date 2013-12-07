@@ -961,6 +961,21 @@ public class GriefPrevention extends JavaPlugin
 			player = (Player) sender;
 		}
 		
+		if(cmd.getName().equalsIgnoreCase("gpdebug"))
+		{
+			if(BaseProtectHandler.debug == true)
+			{
+				BaseProtectHandler.debug = false;
+				sender.sendMessage("Debug turned off");
+			}
+			else
+			{
+				BaseProtectHandler.debug = true;
+				sender.sendMessage("Debug turned on");
+			}
+			return true;
+		}
+		
 		//abandonclaim
 		if(cmd.getName().equalsIgnoreCase("abandonclaim") && player != null)
 		{

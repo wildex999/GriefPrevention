@@ -12,6 +12,7 @@ import w999.baseprotect.WorldInteract;
 
 public class BaseProtectHandler implements IClaimManager {
 	
+	public static boolean debug = false;
 	GriefPrevention griefPrevention;
 	Claim cachedClaim; //The same interactor will do many checks against the same block and same claim during a tick, Cache it.
 	
@@ -23,11 +24,21 @@ public class BaseProtectHandler implements IClaimManager {
 	@Override
 	public boolean claimCanBuild(WorldInteract interactor, Location loc) {
 		w999.baseprotect.PlayerData owner = interactor.getItemOwner();
+		String debugMsg = "";
 		
 		//Get the claim at the location
 		Claim claim = griefPrevention.dataStore.getClaimAt(loc, false, cachedClaim);
 		
-		//Cache tke result
+		if(debug)
+		{
+			debugMsg += "GPDebug interactor: " + interactor + "\n";
+			if(cachedClaim == claim)
+				debugMsg += "GPDebug: Using cached claim\n";
+			else
+				debugMsg += "GPDebug: Not using cached claim\n";
+		}
+		
+		//Cache the result
 		cachedClaim = claim;
 		
 		//If no claim, just allow it(For now)
@@ -36,12 +47,26 @@ public class BaseProtectHandler implements IClaimManager {
 			
 		//If no owner and inside a claim, don't let it through
 		if(owner == null || owner.getBukkitPlayer() == null)
+		{
+			if(debug)
+			{
+				System.out.println(debugMsg);
+				System.out.println("GPDebug: exiting false due to missing owner or owner bukkit player");
+				System.out.println("GPDebug Owner: " + owner);
+			}
 			return false;
+		}
 		
 		//Check if player allowed to build in claim
-		if(claim.allowBuild(owner.getBukkitPlayer()) == null)
+		String allowed = claim.allowBuild(owner.getBukkitPlayer());
+		if(allowed == null)
 			return true;
 		
+		if(debug)
+		{
+			System.out.println(debugMsg);
+			System.out.println("GPDebug exiting false due to not allowed to build:" + allowed);
+		}
 		return false;
 	}
 
@@ -66,6 +91,11 @@ public class BaseProtectHandler implements IClaimManager {
 	@Override
 	public void setSkipEvent(boolean skip) {
 		GriefPrevention.ignoreEvents = skip;
+	}
+
+	@Override
+	public void setDebug(boolean debug) {
+		this.debug = debug;
 	}
 
 }
